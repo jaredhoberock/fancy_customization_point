@@ -28,8 +28,6 @@ class multi_function<Implementation1,Implementations...> : multi_function<Implem
 
     mutable Implementation1 impl_;
 
-    constexpr static std::size_t this_priority = sizeof...(Implementations);
-
     template<class... Args,
              class Result = decltype(impl_(std::declval<Args>()...))
             >
