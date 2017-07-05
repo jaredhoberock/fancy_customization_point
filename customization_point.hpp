@@ -14,11 +14,7 @@ template<class... Implementations>
 class multi_function;
 
 template<>
-class multi_function<>
-{
-  protected:
-    void impl() const = delete;
-};
+class multi_function<> {};
 
 
 // a multi_function has several different implementations
@@ -27,14 +23,12 @@ class multi_function<>
 template<class Implementation1, class... Implementations>
 class multi_function<Implementation1,Implementations...> : multi_function<Implementations...>
 {
-  protected:
+  private:
     using super_t = multi_function<Implementations...>;
 
     mutable Implementation1 impl_;
 
     constexpr static std::size_t this_priority = sizeof...(Implementations);
-
-    using super_t::impl;
 
     template<class... Args,
              class Result = decltype(impl_(std::declval<Args>()...))
@@ -42,6 +36,14 @@ class multi_function<Implementation1,Implementations...> : multi_function<Implem
     static constexpr Result impl(const multi_function& self, Args&&... args)
     {
       return self.impl_(std::forward<Args>(args)...);
+    }
+
+    template<class... Args,
+             class Result = decltype(std::declval<super_t>()(std::declval<Args>()...))
+            >
+    static constexpr Result impl(const super_t& self, Args&&... args)
+    {
+      return self(std::forward<Args>(args)...); 
     }
 
   public:
