@@ -7,7 +7,8 @@
 struct adl_for_each
 {
   template<class... Args>
-  constexpr auto operator()(Args&&... args) const
+  constexpr auto operator()(Args&&... args) const ->
+    decltype(for_each(std::forward<Args>(args)...))
   {
     return for_each(std::forward<Args>(args)...);
   }

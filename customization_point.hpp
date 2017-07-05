@@ -28,7 +28,7 @@ class multi_function<Implementation1,Implementations...> : multi_function<Implem
     mutable Implementation1 impl_;
 
     template<class... Args,
-             class Result = decltype(impl_(std::declval<Args>()...))
+             class Result = decltype(std::declval<Implementation1>()(std::declval<Args>()...))
             >
     static constexpr Result impl(const multi_function& self, Args&&... args)
     {
