@@ -38,9 +38,9 @@ class multi_function<Implementation1,Implementations...> : multi_function<Implem
     template<class... Args,
              class Result = decltype(std::declval<super_t>()(std::declval<Args>()...))
             >
-    static constexpr Result impl(const super_t& self, Args&&... args)
+    static constexpr Result impl(const super_t& super, Args&&... args)
     {
-      return self(std::forward<Args>(args)...); 
+      return super(std::forward<Args>(args)...); 
     }
 
   public:
