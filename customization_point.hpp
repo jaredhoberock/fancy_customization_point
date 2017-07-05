@@ -18,8 +18,7 @@ class multi_function<> {};
 
 
 // a multi_function has several different implementations
-// when called, the multi_function selects the implementation with highest priority that is not ill-formed
-// the implementations are given in order of decreasing priority/preference
+// when called, the multi_function selects the first implementation that is not ill-formed
 template<class Implementation1, class... Implementations>
 class multi_function<Implementation1,Implementations...> : multi_function<Implementations...>
 {
