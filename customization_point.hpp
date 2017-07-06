@@ -27,29 +27,30 @@ class multi_function<Implementation1,Implementations...> : multi_function<Implem
 
     mutable Implementation1 impl_;
 
-    template<class... Args,
-             class Result = decltype(std::declval<Implementation1>()(std::declval<Args>()...))
-            >
-    static constexpr Result impl(const multi_function& self, Args&&... args)
+    template<class... Args>
+    static constexpr auto impl(const multi_function& self, Args&&... args) ->
+      decltype(self.impl_(std::forward<Args>(args)...))
     {
       return self.impl_(std::forward<Args>(args)...);
     }
 
-    template<class... Args,
-             class Result = decltype(std::declval<super_t>()(std::declval<Args>()...))
-            >
-    static constexpr Result impl(const super_t& super, Args&&... args)
+    template<class... Args>
+    static constexpr auto impl(const super_t& super, Args&&... args) ->
+      decltype(super(std::forward<Args>(args)...))
     {
       return super(std::forward<Args>(args)...); 
     }
 
   public:
+    constexpr multi_function() = default;
+
     constexpr multi_function(Implementation1 impl1, Implementations... impls)
       : multi_function<Implementations>(impls)..., impl_(impl1)
     {}
 
     template<class... Args>
-    constexpr auto operator()(Args&&... args) const
+    constexpr auto operator()(Args&&... args) const ->
+      decltype(multi_function::impl(*this, std::forward<Args>(args)...))
     {
       return multi_function::impl(*this, std::forward<Args>(args)...);
     }
