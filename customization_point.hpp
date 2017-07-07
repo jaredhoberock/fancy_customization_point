@@ -29,6 +29,7 @@ class customization_point : private multi_function<ADLImplementation, FallbackIm
     constexpr auto operator()(Args&&... args) const ->
       decltype(super_t::operator()(self(), std::forward<Args>(args)...))
     {
+      // when we are called like a function, we insert ourself as the first parameter to the call to the multi_function
       return super_t::operator()(self(), std::forward<Args>(args)...);
     }
 };
