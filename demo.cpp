@@ -80,6 +80,7 @@ int main()
   std::cout << std::endl;
 
   // should print something fancy like mine::invoke(fancy, for_each_t), 
+  // and then something like mine::seq_policy::for_each(),
   // and then the numbers
   experimental::for_each(mine::fancy, vec.begin(), vec.end(), [](int x)
   {
