@@ -24,7 +24,17 @@ void default_for_each(ExecutionPolicy&&, Iterator first, Iterator last, Function
 namespace detail
 {
 
-struct adl_for_each
+struct call_member_for_each
+{
+  template<class Arg1, class... Args>
+  constexpr auto operator()(Arg1&& arg1, Args&&... args) const ->
+    decltype(std::forward<Arg1>(arg1).for_each(std::forward<Args>(args)...))
+  {
+    return std::forward<Arg1>(arg1).for_each(std::forward<Args>(args)...);
+  }
+};
+
+struct call_free_for_each
 {
   template<class... Args>
   constexpr auto operator()(Args&&... args) const ->
@@ -49,13 +59,18 @@ struct default_for_each
 
 
 constexpr auto for_each = experimental::make_customization_point(
-  detail::adl_for_each{},
+  detail::call_member_for_each{},
+  detail::call_free_for_each{},
   detail::default_for_each{}
 );
 
 // or, in C++17 with constexpr lambda:
 // 
 //     constexpr auto for_each = experimental::make_customization_point(
+//       [](auto&& policy, auto... args)
+//       {
+//         return policy.for_each(args...);
+//       },
 //       [](auto&& policy, auto... args)
 //       {
 //         return for_each(policy, args...);
@@ -69,7 +84,7 @@ constexpr auto for_each = experimental::make_customization_point(
 
 // the following way to define for_each by deriving from customization_point gives its type a unique, friendly name "for_each_t":
 //
-//     struct for_each_t : experimental::customization_point<for_each_t, detail::adl_for_each, detail::default_for_each> {};
+//     struct for_each_t : experimental::customization_point<for_each_t, detail::call_member_for_each, detail::call_free_for_each, detail::default_for_each> {};
 //     
 //     constexpr for_each_t for_each{};
 

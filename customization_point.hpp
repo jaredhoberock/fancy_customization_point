@@ -62,11 +62,26 @@ struct drop_first_arg_and_invoke
 // * Derived is the name of the type (if any) derived from this customization_point (e.g., begin_t)
 //   If no type derives from customization_point, use void.
 //
-// * ADLFunction is a function type whose job is to call the name of the customization point via ADL
-// 
-//   For example, ADLFunction for begin_t could work like this:
+// * CallMemberFunction is a function type whose job is to call the name of the customization point as a member function.
 //
-//       struct adl_begin
+//   For example, CallMemberFunction for begin_t could work like this:
+//
+//       struct call_member_function_begin
+//       {
+//         template<class Arg1, class... Args>
+//         constexpr auto operator()(Arg1&& arg1, Args&&... args) const ->
+//           decltype(std::forward<Arg1>(arg1).begin(std::forward<Args>(args)...))
+//         {
+//           // call begin as a free function
+//           return std::forward<Arg1>(arg1).begin(std::forward<Args>(args)...);
+//         }
+//       };
+//
+// * CallFreeFunction is a function type whose job is to call the name of the customization point as a free function.
+// 
+//   For example, CallFreeFunction for begin_t could work like this:
+//
+//       struct call_free_function_begin
 //       {
 //         template<class... Args>
 //         constexpr auto operator()(Args&&... args) const ->
@@ -77,34 +92,38 @@ struct drop_first_arg_and_invoke
 //         }
 //       };
 //
-// * FallbackFunctions... is a list of functions to use if the ADL call fails. They are attempted in order.
-//   Their signature is the same as the ADLFunction.
+// * FallbackFunctions... is a list of functions to use if the first two calls fail. They are attempted in order.
+//   Their signature is the same as MemberFunction & FreeFunction
 //
-// When a customization_point is called like a function:
+// To sum up, when a customization_point is called like a function:
 //
 //    (*this)(arg1, args...);
 //
 // it tries the following possible implementations, in order:
 //
-// 1. Try to call the customization_point by name via ADL:
+// 1. Try to call the customization_point by name as a member function:
+//
+//        arg1.customization-point-name(args...)
+//
+// 2. Try to call the customization_point by name as a free function:
 //    
 //        customization-point-name(arg1, args...)
 //
-// 2. Try to call the customization point via experimental::invoke:
+// 3. Try to call the customization point via experimental::invoke:
 //
 //        experimental::invoke(arg1, *this, args...)
 //
-// 3. Try the fallback functions, in order:
+// 4. Try the fallback functions, in order:
 //
 //        fallback-function(arg1, args...)
 //
-// If all of these implementations are ill-formed, then the call is ill-formed.
+// If all of these implementations are ill-formed, then the call to the customization_point is ill-formed.
 
 
-// XXX is it possible to eliminate Derived?
-template<class Derived, class ADLFunction, class... FallbackFunctions>
+template<class Derived, class CallMemberFunction, class CallFreeFunction, class... FallbackFunctions>
 class customization_point : private multi_function<
-  detail::drop_first_arg_and_invoke<ADLFunction>,
+  detail::drop_first_arg_and_invoke<CallMemberFunction>,
+  detail::drop_first_arg_and_invoke<CallFreeFunction>,
   detail::invoke_customization_point,
   detail::drop_first_arg_and_invoke<FallbackFunctions>...
 >
@@ -115,7 +134,8 @@ class customization_point : private multi_function<
     // however, this "self" parameter is not included in the signature of the other functions ADLFunction & FallbackFunctions...
     // so, wrap them in a wrapper functor which discards its first parameter before calling the wrapped function
     using super_t = multi_function<
-      detail::drop_first_arg_and_invoke<ADLFunction>,
+      detail::drop_first_arg_and_invoke<CallMemberFunction>,
+      detail::drop_first_arg_and_invoke<CallFreeFunction>,
       detail::invoke_customization_point,
       detail::drop_first_arg_and_invoke<FallbackFunctions>...
     >;
@@ -133,11 +153,12 @@ class customization_point : private multi_function<
 
   public:
     constexpr customization_point()
-      : customization_point(ADLFunction{}, FallbackFunctions{}...)
+      : customization_point(CallMemberFunction{}, CallFreeFunction{}, FallbackFunctions{}...)
     {}
 
-    constexpr customization_point(ADLFunction adl_function, FallbackFunctions... fallback_funcs)
-      : super_t(detail::drop_first_arg_and_invoke<ADLFunction>{adl_function},
+    constexpr customization_point(CallMemberFunction call_member_function, CallFreeFunction call_free_function, FallbackFunctions... fallback_funcs)
+      : super_t(detail::drop_first_arg_and_invoke<CallMemberFunction>{call_member_function},
+                detail::drop_first_arg_and_invoke<CallFreeFunction>{call_free_function},
                 detail::invoke_customization_point{},
                 detail::drop_first_arg_and_invoke<FallbackFunctions>{fallback_funcs}...)
     {}
@@ -151,10 +172,11 @@ class customization_point : private multi_function<
 };
 
 
-template<class ADLFunction, class... FallbackFunctions>
-constexpr customization_point<void,ADLFunction,FallbackFunctions...> make_customization_point(ADLFunction adl_func, FallbackFunctions... fallback_funcs)
+template<class CallMemberFunction, class CallFreeFunction, class... FallbackFunctions>
+constexpr customization_point<void,CallMemberFunction,CallFreeFunction,FallbackFunctions...>
+  make_customization_point(CallMemberFunction call_member_func, CallFreeFunction call_free_func, FallbackFunctions... fallback_funcs)
 {
-  return customization_point<void,ADLFunction,FallbackFunctions...>(adl_func, fallback_funcs...);
+  return customization_point<void,CallMemberFunction,CallFreeFunction,FallbackFunctions...>(call_member_func, call_free_func, fallback_funcs...);
 }
 
 

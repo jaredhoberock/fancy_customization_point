@@ -10,7 +10,18 @@ namespace detail
 {
 
 
-struct adl_invoke_with_customizer
+struct member_function_invoke_with_customizer
+{
+  template<class Invoker, class Customizer, class... Args>
+  constexpr auto operator()(Invoker&&, Customizer&& customizer, Args&&... args) const ->
+    decltype(std::forward<Customizer>(customizer).invoke(std::forward<Args>(args)...))
+  {
+    return std::forward<Customizer>(customizer).invoke(std::forward<Args>(args)...);
+  }
+};
+
+
+struct free_function_invoke_with_customizer
 {
   template<class Invoker, class Customizer, class... Args>
   constexpr auto operator()(Invoker&&, Customizer&& customizer, Args&&... args) const ->
@@ -45,15 +56,27 @@ struct drop_customizer_and_invoke_with_self
 
 } // end detail
 
-// invoke(arg1, args...) has three cases:
-// 1. Assume arg1 is the customizer. Try calling invoke(arg1, args...) via ADL
-// 2. Assume arg1 is a function. Try calling arg1(args...) like a function
-// 3. Drop the first argument (presumably a customizer type which didn't happen to provide a customization) and recurse to experimental::invoke(args...)
+// invoke(arg1, args...) has four cases implemented by the functors above:
+//
+//   1. Assume arg1 is the customizer. Try calling arg1.invoke(args...)
+//   2. Assume arg1 is the customizer. Try calling invoke(arg1, args...) via ADL
+//   3. Assume arg1 is a function. Try calling arg1(args...) like a function
+//   4. Drop the first argument (presumably a customizer type which didn't happen to provide a customization) and recurse to experimental::invoke(args...)
 
-class invoke_t : private multi_function<detail::adl_invoke_with_customizer, detail::invoke_function_directly, detail::drop_customizer_and_invoke_with_self>
+class invoke_t : private multi_function<
+  detail::member_function_invoke_with_customizer,
+  detail::free_function_invoke_with_customizer,
+  detail::invoke_function_directly,
+  detail::drop_customizer_and_invoke_with_self
+>
 {
   private:
-    using super_t = multi_function<detail::adl_invoke_with_customizer, detail::invoke_function_directly, detail::drop_customizer_and_invoke_with_self>;
+    using super_t = multi_function<
+      detail::member_function_invoke_with_customizer,
+      detail::free_function_invoke_with_customizer,
+      detail::invoke_function_directly,
+      detail::drop_customizer_and_invoke_with_self
+    >;
 
   public:
     using super_t::super_t;
@@ -64,7 +87,7 @@ class invoke_t : private multi_function<detail::adl_invoke_with_customizer, deta
     {
       // when this invoke_t is called like a function, it inserts itself as the first parameter to the call
       // to the multi_function
-      // this allows the recursion used in the functors above
+      // this allows the recursion used in drop_customizer_and_invoke_with_self above
       return super_t::operator()(*this, std::forward<Args>(args)...);
     }
 };

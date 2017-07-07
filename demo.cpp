@@ -7,8 +7,18 @@ namespace mine
 {
 
 
-struct policy {};
-constexpr policy seq{};
+struct seq_policy
+{
+  // customize for_each by introducing a member function
+  template<class Iterator, class Function>
+  void for_each(Iterator first, Iterator last, Function f) const
+  {
+    std::cout << "mine::seq_policy::for_each()" << std::endl;
+    experimental::for_each(first, last, f);
+  }
+};
+
+constexpr seq_policy seq{};
 
 
 struct fancy_policy {};
@@ -59,9 +69,9 @@ int main()
   std::cout << std::endl;
   std::cout << std::endl;
 
-  // should print something fancy like mine::invoke(fancy, for_each_t), 
+  // should print something like mine::seq_policy::for_each(),
   // and then the numbers
-  experimental::for_each(mine::fancy, vec.begin(), vec.end(), [](int x)
+  experimental::for_each(mine::seq, vec.begin(), vec.end(), [](int x)
   {
     std::cout << x << " ";
   });
@@ -69,8 +79,9 @@ int main()
   std::cout << std::endl;
   std::cout << std::endl;
 
-  // should just print the numbers
-  experimental::for_each(mine::seq, vec.begin(), vec.end(), [](int x)
+  // should print something fancy like mine::invoke(fancy, for_each_t), 
+  // and then the numbers
+  experimental::for_each(mine::fancy, vec.begin(), vec.end(), [](int x)
   {
     std::cout << x << " ";
   });
