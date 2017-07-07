@@ -53,6 +53,19 @@ constexpr auto for_each = experimental::make_customization_point(
   detail::default_for_each{}
 );
 
+// or, in C++17 with constexpr lambda:
+// 
+//     constexpr auto for_each = experimental::make_customization_point(
+//       [](auto&& policy, auto... args)
+//       {
+//         return for_each(policy, args...);
+//       },
+//       [](auto&& policy, auto... args)
+//       {
+//         return experimental::default_for_each(policy, args...);
+//       }
+//     );
+
 
 // the following way to define for_each by deriving from customization_point gives its type a unique, friendly name "for_each_t":
 //
