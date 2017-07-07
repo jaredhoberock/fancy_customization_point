@@ -19,18 +19,6 @@ struct adl_for_each
   }
 };
 
-// XXX we should move this into customization_point so we don't have to superfluously define it for each derivation of customization_point
-//     the problem is that experimental::invoke is itself a customization_point, and experimental::invoke is used below
-struct invoke_customization_point
-{
-  template<class CustomizationPoint, class Customizer, class... Args>
-  constexpr auto operator()(CustomizationPoint&& self, Customizer&& customizer, Args&&... args) const ->
-    decltype(experimental::invoke(std::forward<Customizer>(customizer), std::forward<CustomizationPoint>(self), std::forward<Args>(args)...))
-  {
-    return experimental::invoke(std::forward<Customizer>(customizer), std::forward<CustomizationPoint>(self), std::forward<Args>(args)...);
-  }
-};
-
 struct std_for_each
 {
   template<class ForEach, class Iterator, class Function>
@@ -49,7 +37,7 @@ struct std_for_each
 
 } // end detail
 
-class for_each_t : public experimental::customization_point<for_each_t, detail::adl_for_each, detail::invoke_customization_point, detail::std_for_each> {};
+class for_each_t : public experimental::customization_point<for_each_t, detail::adl_for_each, detail::std_for_each> {};
 
 constexpr for_each_t for_each{};
 
