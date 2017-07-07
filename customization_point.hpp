@@ -37,6 +37,23 @@ struct invoke_customization_point
 };
 
 
+// this functor wraps another Function
+// when drop_first_arg_and_invoke is called,
+// it ignores its first argument and calls the Function with the remaining arguments
+template<class Function>
+struct drop_first_arg_and_invoke
+{
+  Function f;
+
+  template<class Arg1, class... Args>
+  constexpr auto operator()(Arg1&&, Args&&... args) const ->
+    decltype(f(std::forward<Args>(args)...))
+  {
+    return f(std::forward<Args>(args)...);
+  }
+};
+
+
 } // end detail
 
 
@@ -50,15 +67,13 @@ struct invoke_customization_point
 //       struct adl_begin
 //       {
 //         template<class... Args>
-//         constexpr auto operator()(const begin_t& self, Args&&... args) const ->
+//         constexpr auto operator()(Args&&... args) const ->
 //           decltype(begin(std::forward<Args>(args)...))
 //         {
 //           // call begin via ADL
 //           return begin(std::forward<Args>(args)...);
 //         }
 //       };
-//
-//   Note that the first parameter of operator() is *this.
 //
 // * FallbackFunctions... is a list of functions to use if the ADL call fails. They are attempted in order.
 //   Their signature is the same as the ADLFunction.
@@ -79,17 +94,29 @@ struct invoke_customization_point
 //
 // 3. Try the fallback functions, in order:
 //
-//        fallback-function(*this, arg1, args...)
+//        fallback-function(arg1, args...)
 //
 // If all of these implementations are ill-formed, then the call is ill-formed.
 
 
-// XXX eliminate Derived
+// XXX is it possible to eliminate Derived?
 template<class Derived, class ADLFunction, class... FallbackFunctions>
-class customization_point : private multi_function<ADLFunction, detail::invoke_customization_point, FallbackFunctions...>
+class customization_point : private multi_function<
+  detail::drop_first_arg_and_invoke<ADLFunction>,
+  detail::invoke_customization_point,
+  detail::drop_first_arg_and_invoke<FallbackFunctions>...
+>
 {
   private:
-    using super_t = multi_function<ADLFunction, detail::invoke_customization_point, FallbackFunctions...>;
+    // in order for invoke_customization_point to receive *this as its first argument,
+    // we need to insert *this as the first parameter passed to the call to multi_function::operator()
+    // however, this "self" parameter is not included in the signature of the other functions ADLFunction & FallbackFunctions...
+    // so, wrap them in a wrapper functor which discards its first parameter before calling the wrapped function
+    using super_t = multi_function<
+      detail::drop_first_arg_and_invoke<ADLFunction>,
+      detail::invoke_customization_point,
+      detail::drop_first_arg_and_invoke<FallbackFunctions>...
+    >;
 
     const Derived& self() const
     {
@@ -99,13 +126,11 @@ class customization_point : private multi_function<ADLFunction, detail::invoke_c
   public:
     using super_t::super_t;
 
-    template<class... Args>
-    constexpr auto operator()(Args&&... args) const ->
-      decltype(super_t::operator()(self(), std::forward<Args>(args)...))
+    template<class Arg1, class... Args>
+    constexpr auto operator()(Arg1&& arg1, Args&&... args) const ->
+      decltype(super_t::operator()(self(), std::forward<Arg1>(arg1), std::forward<Args>(args)...))
     {
-      // when we are called like a function, we insert ourself as the first parameter to the call to the multi_function
-      // this allows recursive customization_points (it's like a y combinator)
-      return super_t::operator()(self(), std::forward<Args>(args)...);
+      return super_t::operator()(self(), std::forward<Arg1>(arg1), std::forward<Args>(args)...);
     }
 };
 

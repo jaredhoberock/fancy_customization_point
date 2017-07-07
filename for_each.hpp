@@ -11,8 +11,8 @@ namespace detail
 
 struct adl_for_each
 {
-  template<class ForEach, class... Args>
-  constexpr auto operator()(ForEach&&, Args&&... args) const ->
+  template<class... Args>
+  constexpr auto operator()(Args&&... args) const ->
     decltype(for_each(std::forward<Args>(args)...))
   {
     return for_each(std::forward<Args>(args)...);
@@ -21,14 +21,14 @@ struct adl_for_each
 
 struct std_for_each
 {
-  template<class ForEach, class Iterator, class Function>
-  constexpr Function operator()(ForEach&&, Iterator first, Iterator last, Function f) const
+  template<class Iterator, class Function>
+  constexpr Function operator()(Iterator first, Iterator last, Function f) const
   {
     return std::for_each(first, last, f);
   }
 
-  template<class ForEach, class ExecutionPolicy, class Iterator, class Function>
-  constexpr void operator()(ForEach&&, ExecutionPolicy&&, Iterator first, Iterator last, Function f) const
+  template<class ExecutionPolicy, class Iterator, class Function>
+  constexpr void operator()(ExecutionPolicy&&, Iterator first, Iterator last, Function f) const
   {
     std::for_each(first, last, f);
   }
