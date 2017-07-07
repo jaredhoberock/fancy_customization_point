@@ -26,6 +26,20 @@ auto invoke(FancyExecutionPolicy&& policy, CustomizationPoint&& customization_po
 
   // call the customization point with seq
   return customization_point(seq, std::forward<Args>(args)...);
+
+  // Because customization_points are callable objects, they can be invoked via experimental::invoke()
+  // Therefore, the above call ends up being equivalent to:
+  //
+  //     return experimental::invoke(customization_point, seq, std::forward<Args>(args)...);
+  //
+  // Moreover, because there is no specialization of invoke() for seq, the above call is also equivalent to:
+  //
+  //     return experimental::invoke(seq, customization_point, std::forward<Args>(args)...);
+  //
+  // This is because experimental::invoke will not find a specialization of invoke(seq, customization_point, args...).
+  // Therefore, experimental::invoke will attempt the following call, which will succeed:
+  //
+  //     return customization_point(std::forward<Args>(args)...);
 }
 
 
