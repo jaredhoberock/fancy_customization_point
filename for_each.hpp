@@ -18,7 +18,8 @@ struct adl_for_each
   }
 };
 
-// XXX can we move this into customization_point.hpp?
+// XXX we should move this into customization_point so we don't have to superfluously define it for each derivation of customization_point
+//     the problem is that experimental::invoke is itself a customization_point, and experimental::invoke is used below
 struct invoke_customization_point
 {
   template<class CustomizationPoint, class Customizer, class... Args>
