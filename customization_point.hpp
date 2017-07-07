@@ -36,7 +36,7 @@ namespace experimental
 
 
 template<class Derived, class ADLFunction, class... FallbackFunctions>
-class customization_point : private multi_function<ADLFunctions, FallbackFunctions...>
+class customization_point : private multi_function<ADLFunction, FallbackFunctions...>
 {
   private:
     using super_t = multi_function<ADLFunction, FallbackFunctions...>;
@@ -61,7 +61,7 @@ class customization_point : private multi_function<ADLFunctions, FallbackFunctio
 
 
 template<class Derived, class ADLFunction, class... FallbackFunctions>
-constexpr customization_point<Derived,ADLFunction,FallbackFunctions...> make_customization_point(ADLFunction adl_funcs, FallbackFunctions... fallback_funcs)
+constexpr customization_point<Derived,ADLFunction,FallbackFunctions...> make_customization_point(ADLFunction adl_func, FallbackFunctions... fallback_funcs)
 {
   return customization_point<Derived,ADLFunction,FallbackFunctions...>(adl_func, fallback_funcs...);
 }

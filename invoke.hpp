@@ -1,6 +1,6 @@
 #pragma once
 
-#include "customization_point.hpp"
+#include "multi_function.hpp"
 #include <utility>
 
 
@@ -50,7 +50,24 @@ struct drop_customizer_and_invoke_with_self
 // 2. Assume arg1 is a function. Try calling arg1(args...) like a function
 // 3. Drop the first argument (presumably a customizer type which didn't happen to provide a customization) and recurse to experimental::invoke(args...)
 
-class invoke_t : public customization_point<invoke_t, detail::adl_invoke_with_customizer, detail::invoke_function_directly, detail::drop_customizer_and_invoke_with_self> {};
+class invoke_t : private multi_function<detail::adl_invoke_with_customizer, detail::invoke_function_directly, detail::drop_customizer_and_invoke_with_self>
+{
+  private:
+    using super_t = multi_function<detail::adl_invoke_with_customizer, detail::invoke_function_directly, detail::drop_customizer_and_invoke_with_self>;
+
+  public:
+    using super_t::super_t;
+
+    template<class... Args>
+    constexpr auto operator()(Args&&... args) const ->
+      decltype(super_t::operator()(*this, std::forward<Args>(args)...))
+    {
+      // when this invoke_t is called like a function, it inserts itself as the first parameter to the call
+      // to the multi_function
+      // this allows the recursion used in the functors above
+      return super_t::operator()(*this, std::forward<Args>(args)...);
+    }
+};
 
 
 constexpr invoke_t invoke{};

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "customization_point.hpp"
 #include "invoke.hpp"
 #include <algorithm>
 
