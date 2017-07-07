@@ -36,7 +36,7 @@ int main()
   std::vector<int> vec(10);
   std::iota(vec.begin(), vec.end(), 0);
 
-  // should print the numbers
+  // should just print the numbers
   experimental::for_each(vec.begin(), vec.end(), [](int x)
   {
     std::cout << x << " ";
@@ -45,7 +45,8 @@ int main()
   std::cout << std::endl;
   std::cout << std::endl;
 
-  // should print something like mine::invoke(fancy_policy, for_each_t), 
+  // should print something fancy like mine::invoke(fancy_policy, for_each_t), 
+  // and then the numbers
   experimental::for_each(mine::fancy, vec.begin(), vec.end(), [](int x)
   {
     std::cout << x << " ";
@@ -54,7 +55,7 @@ int main()
   std::cout << std::endl;
   std::cout << std::endl;
 
-  // should print the numbers
+  // should just print the numbers
   experimental::for_each(mine::seq, vec.begin(), vec.end(), [](int x)
   {
     std::cout << x << " ";
