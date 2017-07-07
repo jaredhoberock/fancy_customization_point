@@ -22,7 +22,7 @@ template<class FancyExecutionPolicy,
          >>
 auto invoke(FancyExecutionPolicy&& policy, CustomizationPoint&& customization_point, Args&&... args)
 {
-  std::cout << "mine::invoke(fancy_policy, " << typeid(CustomizationPoint).name() << ")" << std::endl;
+  std::cout << "mine::invoke(fancy, " << typeid(CustomizationPoint).name() << ", args...)" << std::endl;
 
   // call the customization point with seq
   return customization_point(seq, std::forward<Args>(args)...);
@@ -59,7 +59,7 @@ int main()
   std::cout << std::endl;
   std::cout << std::endl;
 
-  // should print something fancy like mine::invoke(fancy_policy, for_each_t), 
+  // should print something fancy like mine::invoke(fancy, for_each_t), 
   // and then the numbers
   experimental::for_each(mine::fancy, vec.begin(), vec.end(), [](int x)
   {
