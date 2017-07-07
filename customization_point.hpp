@@ -1,5 +1,6 @@
 #pragma once
 
+#include "multi_function.hpp"
 #include <utility>
 
 // Inspired by
@@ -10,59 +11,35 @@ namespace experimental
 {
 
 
-template<class... Implementations>
-class multi_function;
-
-template<>
-class multi_function<> {};
-
-
-// a multi_function has several different implementations
-// when called, the multi_function selects the first implementation that is not ill-formed
-template<class Implementation1, class... Implementations>
-class multi_function<Implementation1,Implementations...> : multi_function<Implementations...>
+template<class Derived, class ADLImplementation, class... FallbackImplementations>
+class customization_point : private multi_function<ADLImplementation, FallbackImplementations...>
 {
   private:
-    using super_t = multi_function<Implementations...>;
+    using super_t = multi_function<ADLImplementation, FallbackImplementations...>;
 
-    mutable Implementation1 impl_;
-
-    template<class... Args>
-    static constexpr auto impl(const multi_function& self, Args&&... args) ->
-      decltype(self.impl_(std::forward<Args>(args)...))
+    const Derived& self() const
     {
-      return self.impl_(std::forward<Args>(args)...);
-    }
-
-    template<class... Args>
-    static constexpr auto impl(const super_t& super, Args&&... args) ->
-      decltype(super(std::forward<Args>(args)...))
-    {
-      return super(std::forward<Args>(args)...); 
+      return static_cast<const Derived&>(*this);
     }
 
   public:
-    constexpr multi_function() = default;
-
-    constexpr multi_function(Implementation1 impl1, Implementations... impls)
-      : multi_function<Implementations>(impls)..., impl_(impl1)
-    {}
+    using super_t::super_t;
 
     template<class... Args>
     constexpr auto operator()(Args&&... args) const ->
-      decltype(multi_function::impl(*this, std::forward<Args>(args)...))
+      decltype(super_t::operator()(self(), std::forward<Args>(args)...))
     {
-      return multi_function::impl(*this, std::forward<Args>(args)...);
+      return super_t::operator()(self(), std::forward<Args>(args)...);
     }
 };
 
 
-template<class Implementation1, class... Implementations>
-constexpr multi_function<Implementation1,Implementations...> customization_point(Implementation1 impl1, Implementations... impls)
+template<class Derived, class ADLImplementation, class... FallbackImplementations>
+constexpr customization_point<Derived,ADLImplementation,FallbackImplementations...> make_customization_point(ADLImplementation adl_impl, FallbackImplementations... fallback_impls)
 {
-  return multi_function<Implementation1,Implementations...>(impl1, impls...);
+  return customization_point<Derived,ADLImplementation,FallbackImplementations...>(adl_impl, fallback_impls...);
 }
 
 
-}
+} // end experimental
 
