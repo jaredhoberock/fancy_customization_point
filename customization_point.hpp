@@ -118,9 +118,15 @@ class customization_point : private multi_function<
       detail::drop_first_arg_and_invoke<FallbackFunctions>...
     >;
 
-    const Derived& self() const
+    using derived_type = std::conditional_t<
+      std::is_void<Derived>::value,
+      customization_point,
+      Derived
+    >;
+
+    const derived_type& self() const
     {
-      return static_cast<const Derived&>(*this);
+      return static_cast<const derived_type&>(*this);
     }
 
   public:
@@ -139,6 +145,12 @@ template<class Derived, class ADLFunction, class... FallbackFunctions>
 constexpr customization_point<Derived,ADLFunction,FallbackFunctions...> make_customization_point(ADLFunction adl_func, FallbackFunctions... fallback_funcs)
 {
   return customization_point<Derived,ADLFunction,FallbackFunctions...>(adl_func, fallback_funcs...);
+}
+
+template<class ADLFunction, class... FallbackFunctions>
+constexpr customization_point<void,ADLFunction,FallbackFunctions...> make_customization_point(ADLFunction adl_func, FallbackFunctions... fallback_funcs)
+{
+  return customization_point<void,ADLFunction,FallbackFunctions...>(adl_func, fallback_funcs...);
 }
 
 
