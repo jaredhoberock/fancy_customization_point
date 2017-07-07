@@ -41,7 +41,7 @@ class multi_function<Implementation1,Implementations...> : multi_function<Implem
     constexpr multi_function() = default;
 
     constexpr multi_function(Implementation1 impl1, Implementations... impls)
-      : multi_function<Implementations>(impls)..., impl_(impl1)
+      : multi_function<Implementations...>(impls...), impl_(impl1)
     {}
 
     template<class... Args>

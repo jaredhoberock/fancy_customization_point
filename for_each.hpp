@@ -47,9 +47,19 @@ struct default_for_each
 
 } // end detail
 
-class for_each_t : public experimental::customization_point<for_each_t, detail::adl_for_each, detail::default_for_each> {};
 
-constexpr for_each_t for_each{};
+constexpr auto for_each = experimental::make_customization_point(
+  detail::adl_for_each{},
+  detail::default_for_each{}
+);
+
+
+// the following way to define for_each by deriving from customization_point gives its type a unique, friendly name "for_each_t":
+//
+//     struct for_each_t : experimental::customization_point<for_each_t, detail::adl_for_each, detail::default_for_each> {};
+//     
+//     constexpr for_each_t for_each{};
+
 
 } // end experimental
 

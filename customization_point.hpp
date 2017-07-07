@@ -59,7 +59,9 @@ struct drop_first_arg_and_invoke
 
 // customization_point is a class for creating Niebler-style customization points
 //
-// * Derived is the name of the type derived from this customization_point (e.g., begin_t)
+// * Derived is the name of the type (if any) derived from this customization_point (e.g., begin_t)
+//   If no type derives from customization_point, use void.
+//
 // * ADLFunction is a function type whose job is to call the name of the customization point via ADL
 // 
 //   For example, ADLFunction for begin_t could work like this:
@@ -130,7 +132,15 @@ class customization_point : private multi_function<
     }
 
   public:
-    using super_t::super_t;
+    constexpr customization_point()
+      : customization_point(ADLFunction{}, FallbackFunctions{}...)
+    {}
+
+    constexpr customization_point(ADLFunction adl_function, FallbackFunctions... fallback_funcs)
+      : super_t(detail::drop_first_arg_and_invoke<ADLFunction>{adl_function},
+                detail::invoke_customization_point{},
+                detail::drop_first_arg_and_invoke<FallbackFunctions>{fallback_funcs}...)
+    {}
 
     template<class Arg1, class... Args>
     constexpr auto operator()(Arg1&& arg1, Args&&... args) const ->
@@ -140,12 +150,6 @@ class customization_point : private multi_function<
     }
 };
 
-
-template<class Derived, class ADLFunction, class... FallbackFunctions>
-constexpr customization_point<Derived,ADLFunction,FallbackFunctions...> make_customization_point(ADLFunction adl_func, FallbackFunctions... fallback_funcs)
-{
-  return customization_point<Derived,ADLFunction,FallbackFunctions...>(adl_func, fallback_funcs...);
-}
 
 template<class ADLFunction, class... FallbackFunctions>
 constexpr customization_point<void,ADLFunction,FallbackFunctions...> make_customization_point(ADLFunction adl_func, FallbackFunctions... fallback_funcs)
