@@ -11,11 +11,35 @@ namespace experimental
 {
 
 
-template<class Derived, class ADLImplementation, class... FallbackImplementations>
-class customization_point : private multi_function<ADLImplementation, FallbackImplementations...>
+// customization_point is a class for creating Niebler-style customization points
+//
+// * Derived is the name of the type derived from this customization_point (e.g., begin_t)
+// * ADLFunction is a function type whose job is to call the name of the customization point via ADL
+// 
+//   for example ADLFunction for begin_t could work like this:
+//
+//   struct adl_begin
+//   {
+//     template<class... Args>
+//     constexpr auto operator()(const begin_t& self, Args&&... args) const ->
+//       decltype(begin(std::forward<Args>(args)...))
+//     {
+//       // call begin via ADL
+//       return begin(std::forward<Args>(args)...);
+//     }
+//   };
+//
+//   Note that the first parameter of operator() is the same as *this
+//
+// * FallbackFunctions... is a list of functions to use if the ADL call fails. They are attempted in order.
+//   Their signature is the same as the ADLFunction.
+
+
+template<class Derived, class ADLFunction, class... FallbackFunctions>
+class customization_point : private multi_function<ADLFunctions, FallbackFunctions...>
 {
   private:
-    using super_t = multi_function<ADLImplementation, FallbackImplementations...>;
+    using super_t = multi_function<ADLFunction, FallbackFunctions...>;
 
     const Derived& self() const
     {
@@ -36,10 +60,10 @@ class customization_point : private multi_function<ADLImplementation, FallbackIm
 };
 
 
-template<class Derived, class ADLImplementation, class... FallbackImplementations>
-constexpr customization_point<Derived,ADLImplementation,FallbackImplementations...> make_customization_point(ADLImplementation adl_impl, FallbackImplementations... fallback_impls)
+template<class Derived, class ADLFunction, class... FallbackFunctions>
+constexpr customization_point<Derived,ADLFunction,FallbackFunctions...> make_customization_point(ADLFunction adl_funcs, FallbackFunctions... fallback_funcs)
 {
-  return customization_point<Derived,ADLImplementation,FallbackImplementations...>(adl_impl, fallback_impls...);
+  return customization_point<Derived,ADLFunction,FallbackFunctions...>(adl_func, fallback_funcs...);
 }
 
 
